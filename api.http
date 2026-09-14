@@ -1,0 +1,17 @@
+POST http://localhost:3000/assets
+Content-Type: application/json
+
+{
+  "name": "Facebook",
+  "symbol": "FB",
+  "price": 350.00,
+  "image": "https://example.com/facebook.png"
+}
+
+###
+GET http://localhost:3000/assets
+Content-Type: application/json
+
+###
+GET http://localhost:3000/assets/GHG
+Content-Type: application/json
