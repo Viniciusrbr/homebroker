@@ -1,17 +1,71 @@
+###
+# @name createAsset
 POST http://localhost:3000/assets
 Content-Type: application/json
 
 {
-  "name": "Facebook",
-  "symbol": "FB",
-  "price": 350.00,
-  "image": "https://example.com/facebook.png"
+    "name": "Amazon",
+    "symbol": "A1",
+    "price": 100,
+    "image": "AMZN.png"
 }
 
 ###
-GET http://localhost:3000/assets
-Content-Type: application/json
+
+@assetId = {{ createAsset.response.body._id }}
 
 ###
-GET http://localhost:3000/assets/GHG
+GET http://localhost:3000/assets
+
+###
+GET http://localhost:3000/assets/A1
+
+###
+POST http://localhost:3000/assets/A1/dailies
 Content-Type: application/json
+
+{
+  "date": "2024-12-10",
+  "price": 100
+}
+
+###
+GET http://localhost:3000/assets/A1/dailies
+
+###
+# @name createWallet
+POST http://localhost:3000/wallets
+
+###
+
+@walletId = {{ createWallet.response.body._id }}
+
+###
+GET http://localhost:3000/wallets
+
+###
+GET http://localhost:3000/wallets/{{ walletId }}
+
+###
+POST http://localhost:3000/wallets/{{ walletId }}/assets
+Content-Type: application/json
+
+{
+    "assetId": "{{ assetId }}",
+    "shares": 100
+}
+
+###
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+    "walletId": "{{ walletId }}",
+    "assetId": "{{ assetId }}",
+    "shares": 10,
+    "price": 100,
+    "type": "BUY"
+}
+
+###
+GET http://localhost:3000/orders?walletId=2bc27de8-c91b-4644-93f5-f5d1c42481c3
