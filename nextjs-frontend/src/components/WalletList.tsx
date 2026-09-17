@@ -39,6 +39,7 @@ export async function WalletList() {
                 <TableCell>
                   <Button
                     variant="link"
+                    nativeButton={false}
                     render={<Link href={`/?wallet_id=${wallet._id}`} />}
                   >
                     Acessar
