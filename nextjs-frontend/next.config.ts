@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   images: {
+    // Next 16 bloqueia otimização de imagens vindas de IP local por padrão (SSRF);
+    // necessário apenas em dev, pois o MinIO roda em localhost:9000
+    dangerouslyAllowLocalIP: true,
     remotePatterns: [
       {
         protocol: "http",
