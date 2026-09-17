@@ -4,14 +4,16 @@ import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Wallet } from './entities/wallet.entity.js';
 import mongoose, { Model } from 'mongoose';
 import { WalletAsset } from './entities/wallet-asset.entity.js';
+import { Asset } from '../assets/entities/asset.entity.js';
 
 @Injectable()
 export class WalletsService {
 
   constructor(
     @InjectModel(Wallet.name) private walletSchema: Model<Wallet>,
-    @InjectModel(WalletAsset.name) private walletAssetSchema: Model<WalletAsset>,
-    @InjectConnection() private connection: mongoose.Connection
+    @InjectModel(WalletAsset.name)
+    private walletAssetSchema: Model<WalletAsset>,
+    @InjectConnection() private connection: mongoose.Connection,
   ) { }
 
   create(createWalletDto: CreateWalletDto) {
@@ -25,10 +27,12 @@ export class WalletsService {
   findOne(id: string) {
     return this.walletSchema.findById(id).populate([
       {
-        path: 'assets',
-        populate: ['asset']
-      }
-    ]);
+        path: 'assets', //walletasset
+        populate: ['asset'],
+      },
+    ]) as Promise<
+      (Wallet & { assets: (WalletAsset & { asset: Asset })[] }) | null
+    >;
   }
 
   async createWalletAsset(data: {
@@ -42,11 +46,13 @@ export class WalletsService {
 
     try {
       const docs = await this.walletAssetSchema.create(
-        [{
-          wallet: data.walletId,
-          asset: data.assetId,
-          shares: data.shares,
-        },],
+        [
+          {
+            wallet: data.walletId,
+            asset: data.assetId,
+            shares: data.shares,
+          },
+        ],
         { session },
       );
 
@@ -54,8 +60,12 @@ export class WalletsService {
 
       await this.walletSchema.updateOne(
         { _id: data.walletId },
-        { $push: { assets: walletAsset._id } },
-        { session, },
+        {
+          $push: { assets: walletAsset._id },
+        },
+        {
+          session,
+        },
       );
 
       await session.commitTransaction();
