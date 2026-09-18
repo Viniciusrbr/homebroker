@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { AssetShow } from "@/components/AssetShow";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { WalletList } from "@/components/WalletList";
-import { getMyWallet } from "@/queries/queries";
+import { getAssets, getMyWallet } from "@/queries/queries";
 
-export default async function MyWalletListPage({
+export default async function AssetsListPage({
   searchParams,
 }: {
   searchParams: Promise<{ wallet_id: string }>;
@@ -30,43 +29,31 @@ export default async function MyWalletListPage({
     return <WalletList />;
   }
 
+  const assets = await getAssets();
+
   return (
     <div className="flex flex-col space-y-5 grow">
       <article className="format">
-        <h1>Minha carteira</h1>
+        <h1>Ativos</h1>
       </article>
-
       <div className="overflow-x-auto w-full">
-        <Table>
-          <TableCaption>Detalhes da sua carteira</TableCaption>
+        <Table className="w-full max-w-full table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>Ativo</TableHead>
               <TableHead>Cotação</TableHead>
-              <TableHead>Quantidade</TableHead>
               <TableHead>Comprar/vender</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {wallet.assets.map((walletAsset, key) => (
+            {assets.map((asset, key) => (
               <TableRow key={key}>
                 <TableCell>
-                  <AssetShow asset={walletAsset.asset} />
+                  <AssetShow asset={asset} />
                 </TableCell>
-                <TableCell>R$ {walletAsset.asset.price}</TableCell>
-                <TableCell>{walletAsset.shares}</TableCell>
+                <TableCell>R$ {asset.price}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="link"
-                    nativeButton={false}
-                    render={
-                      <Link
-                        href={`/assets/${walletAsset.asset.symbol}?wallet_id=${wallet_id}`}
-                      />
-                    }
-                  >
-                    Comprar/vender
-                  </Button>
+                  <Button>Comprar/vender</Button>
                 </TableCell>
               </TableRow>
             ))}

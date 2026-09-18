@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
         port: "9000",
       },
     ],
-  }
+  },
 };
 
 export default nextConfig;

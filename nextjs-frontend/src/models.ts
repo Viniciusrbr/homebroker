@@ -6,6 +6,13 @@ export type Asset = {
   image_url: string;
 };
 
+export type AssetDaily = {
+  _id: string;
+  asset: Asset;
+  date: string;
+  price: number;
+};
+
 export type WalletAsset = {
   _id: string;
   asset: Asset;
