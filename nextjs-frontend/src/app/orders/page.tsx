@@ -30,7 +30,6 @@ export default async function OrdersListPage({
   }
 
   const orders = await getOrders(wallet_id);
-  console.log(orders);
   return (
     <div className="flex flex-col space-y-5 grow">
       <article className="format">
