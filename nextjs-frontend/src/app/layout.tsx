@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/toast";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Navbar />
         </Suspense>
         <main className="flex flex-col grow p-4">{children}</main>
+        <Toaster />
       </body>
     </html>
   );

@@ -43,7 +43,7 @@ export function ChartComponent(props: {
           height: 0,
           timeScale: {
             timeVisible: true,
-          }
+          },
         });
         this._api.timeScale().fitContent();
       }
