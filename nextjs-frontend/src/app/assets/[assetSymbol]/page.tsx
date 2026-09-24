@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WalletList } from "@/components/WalletList";
 import { type Asset, OrderType } from "@/models";
-import { getMyWallet } from "@/queries/queries";
+import { getAssetDailies, getMyWallet } from "@/queries/queries";
 import { AssetChartComponent } from "./AssetChartComponent";
+import { Time } from "lightweight-charts";
 
 export async function getAsset(symbol: string): Promise<Asset> {
   const response = await fetch(`http://localhost:3000/assets/${symbol}`);
@@ -33,6 +34,11 @@ export default async function AssetDashboard({
   }
 
   const asset = await getAsset(assetSymbol);
+  const assetDailies = await getAssetDailies(assetSymbol);
+  const chartData = assetDailies.map((assetDaily) => ({
+    time: (Date.parse(assetDaily.date) / 1000) as Time,
+    value: assetDaily.price,
+  }));
 
   return (
     <div className="flex flex-col space-y-5 grow">
@@ -72,7 +78,7 @@ export default async function AssetDashboard({
           </Card>
         </div>
         <div className="col-span-3 flex grow">
-          <AssetChartComponent asset={asset} />
+          <AssetChartComponent asset={asset} data={chartData} />
         </div>
       </div>
     </div>
