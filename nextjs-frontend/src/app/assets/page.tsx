@@ -1,16 +1,14 @@
-import { AssetShow } from "@/components/AssetShow";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
-  TableCaption,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { WalletList } from "@/components/WalletList";
 import { getAssets, getMyWallet } from "@/queries/queries";
+import { TableAssetRow } from "./TableAssetRow";
+import { AssetsSync } from "@/components/AssetsSync";
 
 export default async function AssetsListPage({
   searchParams,
@@ -47,19 +45,12 @@ export default async function AssetsListPage({
           </TableHeader>
           <TableBody>
             {assets.map((asset, key) => (
-              <TableRow key={key}>
-                <TableCell>
-                  <AssetShow asset={asset} />
-                </TableCell>
-                <TableCell>R$ {asset.price}</TableCell>
-                <TableCell>
-                  <Button>Comprar/vender</Button>
-                </TableCell>
-              </TableRow>
+              <TableAssetRow key={key} asset={asset} walletId={wallet_id} />
             ))}
           </TableBody>
         </Table>
       </div>
+      <AssetsSync assetsSymbols={assets.map((asset) => asset.symbol)} />
     </div>
   );
 }
