@@ -8,11 +8,14 @@ import { OrdersModule } from './orders/orders.module.js';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://root:root@localhost:27017/nest?authSource=admin&directConnection=true'),
+    MongooseModule.forRoot(
+      'mongodb://root:root@localhost:27017/nest?authSource=admin&directConnection=true',
+    ),
     AssetsModule,
     WalletsModule,
-    OrdersModule],
+    OrdersModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

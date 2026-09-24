@@ -1,4 +1,4 @@
-import { OrderType } from "../entities/order.entity.js";
+import { OrderType } from '../entities/order.entity.js';
 
 export class CreateOrderDto {
   walletId: string;

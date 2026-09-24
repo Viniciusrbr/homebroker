@@ -1,9 +1,9 @@
-import { AssetPresenter } from "../assets/asset.presenter.js";
-import { Asset } from "../assets/entities/asset.entity.js";
-import { Order } from "./entities/order.entity.js";
+import { AssetPresenter } from '../assets/asset.presenter.js';
+import { Asset } from '../assets/entities/asset.entity.js';
+import { Order } from './entities/order.entity.js';
 
 export class OrderPresenter {
-  constructor(private order: Order & { asset: Asset }) { }
+  constructor(private order: Order & { asset: Asset }) {}
 
   toJSON() {
     return {

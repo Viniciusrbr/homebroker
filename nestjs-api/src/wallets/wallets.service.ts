@@ -8,13 +8,12 @@ import { Asset } from '../assets/entities/asset.entity.js';
 
 @Injectable()
 export class WalletsService {
-
   constructor(
     @InjectModel(Wallet.name) private walletSchema: Model<Wallet>,
     @InjectModel(WalletAsset.name)
     private walletAssetSchema: Model<WalletAsset>,
     @InjectConnection() private connection: mongoose.Connection,
-  ) { }
+  ) {}
 
   create(createWalletDto: CreateWalletDto) {
     return this.walletSchema.create(createWalletDto);
@@ -40,7 +39,6 @@ export class WalletsService {
     assetId: string;
     shares: number;
   }) {
-
     const session = await this.connection.startSession();
     await session.startTransaction();
 

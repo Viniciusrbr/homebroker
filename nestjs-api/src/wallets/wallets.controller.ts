@@ -1,11 +1,18 @@
-import { Controller, Get, Post, Body, Param, NotFoundException, } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  NotFoundException,
+} from '@nestjs/common';
 import { WalletsService } from './wallets.service.js';
 import { CreateWalletDto } from './dto/create-wallet.dto.js';
 import { WalletPresenter } from './wallet.presenter.js';
 
 @Controller('wallets')
 export class WalletsController {
-  constructor(private readonly walletsService: WalletsService) { }
+  constructor(private readonly walletsService: WalletsService) {}
 
   @Post()
   create(@Body() createWalletDto: CreateWalletDto) {
@@ -36,7 +43,7 @@ export class WalletsController {
     return this.walletsService.createWalletAsset({
       walletId: id,
       assetId: body.assetId,
-      shares: body.shares
+      shares: body.shares,
     });
   }
 }

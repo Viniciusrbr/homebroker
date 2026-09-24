@@ -7,15 +7,14 @@ import { OrdersGateway } from './orders.gateway.js';
 
 @Module({
   imports: [
-    MongooseModule.forFeature(
-      [
-        {
-          name: Order.name,
-          schema: OrderSchema
-        }
-      ])
+    MongooseModule.forFeature([
+      {
+        name: Order.name,
+        schema: OrderSchema,
+      },
+    ]),
   ],
   controllers: [OrdersController],
   providers: [OrdersService, OrdersGateway],
 })
-export class OrdersModule { }
+export class OrdersModule {}

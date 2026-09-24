@@ -5,7 +5,7 @@ import { OrderPresenter } from './order.presenter.js';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) { }
+  constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto) {
@@ -14,8 +14,8 @@ export class OrdersController {
 
   @Get()
   async findAll(@Query('walletId') walletId: string) {
-    const orders = await this.ordersService.findAll({ walletId })
-    return orders.map((order) => new OrderPresenter(order))
+    const orders = await this.ordersService.findAll({ walletId });
+    return orders.map((order) => new OrderPresenter(order));
   }
 
   @Get(':id')

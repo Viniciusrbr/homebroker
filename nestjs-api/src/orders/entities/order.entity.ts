@@ -1,21 +1,24 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import mongoose, { HydratedDocument } from "mongoose";
-import crypto from "crypto";
-import { Wallet, WalletDocument } from "../../wallets/entities/wallet.entity.js";
-import { Asset, AssetDocument } from "../../assets/entities/asset.entity.js";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
+import crypto from 'crypto';
+import {
+  Wallet,
+  WalletDocument,
+} from '../../wallets/entities/wallet.entity.js';
+import { Asset, AssetDocument } from '../../assets/entities/asset.entity.js';
 
 export type OrderDocument = HydratedDocument<Order>;
 
 export enum OrderType {
-  BUY = "BUY",
-  SELL = "SELL",
+  BUY = 'BUY',
+  SELL = 'SELL',
 }
 
 export enum OrderStatus {
-  PENDING = "PENDING",
-  OPEN = "OPEN",
-  CLOSED = "CLOSED",
-  FAILED = "FAILED",
+  PENDING = 'PENDING',
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+  FAILED = 'FAILED',
 }
 
 @Schema({ timestamps: true })

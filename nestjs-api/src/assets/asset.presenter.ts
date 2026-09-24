@@ -1,7 +1,7 @@
-import { Asset } from "./entities/asset.entity.js";
+import { Asset } from './entities/asset.entity.js';
 
 export class AssetPresenter {
-  constructor(private asset: Asset) { }
+  constructor(private asset: Asset) {}
 
   toJSON() {
     return {
@@ -10,6 +10,6 @@ export class AssetPresenter {
       symbol: this.asset.symbol,
       price: this.asset.price,
       image_url: `http://localhost:9000/${this.asset.image}`,
-    }
+    };
   }
 }
