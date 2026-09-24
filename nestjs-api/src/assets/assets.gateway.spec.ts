@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AssetsGateway } from './assets.gateway.js';
+import { AssetsService } from './assets.service.js';
 
 describe('AssetsGateway', () => {
   let gateway: AssetsGateway;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AssetsGateway],
+      providers: [AssetsGateway, { provide: AssetsService, useValue: {} }],
     }).compile();
 
     gateway = module.get<AssetsGateway>(AssetsGateway);

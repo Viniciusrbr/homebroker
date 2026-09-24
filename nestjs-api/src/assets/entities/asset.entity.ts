@@ -1,15 +1,10 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import crypto from "crypto";
-import { HydratedDocument } from "mongoose";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import crypto from 'crypto';
+import { HydratedDocument } from 'mongoose';
 
 export type AssetDocument = HydratedDocument<Asset>;
 
-@Schema({
-  timestamps: true,
-  collectionOptions: {
-    changeStreamPreAndPostImages: { enabled: true }
-  }
-})
+@Schema({ timestamps: true })
 export class Asset {
   @Prop({ default: () => crypto.randomUUID() })
   _id: string;

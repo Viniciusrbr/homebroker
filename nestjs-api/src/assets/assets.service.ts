@@ -7,8 +7,7 @@ import { Observable } from 'rxjs';
 
 @Injectable()
 export class AssetsService {
-
-  constructor(@InjectModel(Asset.name) private assetSchema: Model<Asset>) { }
+  constructor(@InjectModel(Asset.name) private assetSchema: Model<Asset>) {}
 
   create(createAssetDto: CreateAssetDto) {
     return this.assetSchema.create(createAssetDto);
@@ -28,43 +27,30 @@ export class AssetsService {
     return asset;
   }
 
-  // subscribeNewPriceChangedEvents(): Observable<Asset> {
-  //   return new Observable((observer) => {
-  //     this.assetSchema.watch([
-  //       {
-  //         $match: {
-  //           $or: [{ operationType: 'update' }, { operationType: 'replace' }]
-  //         }
-  //       }
-  //     ],
-  //       { fullDocument: 'updateLookup', fullDocumentBeforeChange: 'whenAvailable' },
-  //     ).on('change', async (data) => {
-  //       if (data.fullDocument.price === data.fullDocumentBeforeChange.price) {
-  //         return;
-  //       }
-  //       const asset = await this.assetSchema.findById(data.fullDocument._id);
-  //       observer.next(asset!);
-  //     });
-  //   })
-  // }
-
   subscribeNewPriceChangedEvents(): Observable<Asset> {
     return new Observable((observer) => {
-      this.assetSchema.watch(
-        [
-          {
-            $match: {
-              operationType: 'update',
-              'updateDescription.updatedFields.price': { $exists: true },
+      const stream = this.assetSchema
+        .watch(
+          [
+            {
+              $match: {
+                $or: [
+                  {
+                    operationType: 'update',
+                    'updateDescription.updatedFields.price': { $exists: true },
+                  },
+                  { operationType: 'replace' },
+                ],
+              },
             },
-          },
-        ],
-        { fullDocument: 'updateLookup' },
-      ).on('change', (data) => {
-        observer.next(data.fullDocument);
-      });
+          ],
+          { fullDocument: 'updateLookup' },
+        )
+        .on('change', (data) => {
+          observer.next(data.fullDocument);
+        });
+
+      return () => stream.close();
     });
   }
-
-
 }

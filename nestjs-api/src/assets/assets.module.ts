@@ -7,9 +7,9 @@ import { AssetsGateway } from './assets.gateway.js';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Asset.name, schema: AssetSchema }])
+    MongooseModule.forFeature([{ name: Asset.name, schema: AssetSchema }]),
   ],
   controllers: [AssetsController],
   providers: [AssetsService, AssetsGateway],
 })
-export class AssetsModule { }
+export class AssetsModule {}
