@@ -13,7 +13,7 @@ export const useAssetStore = create<AssetStore>((set) => ({
   changeAsset: (asset) =>
     set((state) => {
       const assetIndex = state.assets.findIndex(
-        (a) => (a.symbol = asset.symbol),
+        (a) => a.symbol === asset.symbol,
       );
       if (assetIndex === -1) {
         return {
