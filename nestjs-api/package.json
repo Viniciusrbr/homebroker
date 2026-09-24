@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "assets-image": "npx serve -l tcp://127.0.0.1:9000 ./assets"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
