@@ -1,0 +1,2 @@
+allowBuilds:
+  '@confluentinc/kafka-javascript': set this to true or false
