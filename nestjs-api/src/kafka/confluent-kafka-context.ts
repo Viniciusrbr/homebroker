@@ -52,4 +52,4 @@ export class ConfluentKafkaContext extends BaseRpcContext<ConfluentKafkaContextA
     return this.getArgByIndex(5);
   }
 }
-export { };
+export {};

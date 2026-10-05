@@ -50,7 +50,8 @@ export type KafkaServerOptions = {
 
 export class ConfluentKafkaServer
   extends Server
-  implements CustomTransportStrategy {
+  implements CustomTransportStrategy
+{
   public readonly logger = new Logger(ConfluentKafkaServer.name);
 
   protected client: kafkaLib.KafkaJS.Kafka;

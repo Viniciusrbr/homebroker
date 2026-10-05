@@ -23,5 +23,6 @@ import {
   ],
   controllers: [WalletsController],
   providers: [WalletsService],
+  exports: [WalletsService],
 })
-export class WalletsModule {}
+export class WalletsModule { }
