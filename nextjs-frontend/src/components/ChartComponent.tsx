@@ -1,108 +1,91 @@
 "use client";
 
 import {
-  AreaData,
+  type AreaData,
   AreaSeries,
-  IChartApi,
-  ISeriesApi,
-  Time,
+  ColorType,
   createChart,
+  type IChartApi,
+  type ISeriesApi,
+  LineStyle,
+  type Time,
 } from "lightweight-charts";
-import React, {
-  Ref,
-  //forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useLayoutEffect,
-  useRef,
-} from "react";
-
-type ChartRef = {
-  _api: IChartApi | null;
-  api(): IChartApi;
-  free(): void;
-};
+import { type Ref, useEffect, useImperativeHandle, useRef } from "react";
 
 export type ChartComponentRef = {
   update: (data: { time: Time; value: number }) => void;
 };
 
+// Canvas colors mirror the dark theme tokens in globals.css (lightweight-charts
+// does not resolve CSS variables).
+const theme = {
+  text: "#8a93a6",
+  grid: "rgba(255, 255, 255, 0.04)",
+  border: "rgba(255, 255, 255, 0.08)",
+  line: "#5ee0a8",
+  areaTop: "rgba(94, 224, 168, 0.28)",
+  areaBottom: "rgba(94, 224, 168, 0)",
+  crosshair: "rgba(255, 255, 255, 0.25)",
+};
+
 export function ChartComponent(props: {
-  header: React.ReactNode;
   data?: AreaData<Time>[];
   ref: Ref<ChartComponentRef>;
 }) {
-  const { header, data, ref } = props;
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<ChartRef>({
-    _api: null,
-    api() {
-      if (!this._api) {
-        this._api = createChart(chartContainerRef.current!, {
-          width: 0,
-          height: 0,
-          timeScale: {
-            timeVisible: true,
-          },
-        });
-        this._api.timeScale().fitContent();
-      }
-      return this._api;
-    },
-    free() {
-      if (this._api) {
-        this._api.remove();
-      }
-    },
-  });
+  const { data, ref } = props;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<IChartApi>(null);
   const seriesRef = useRef<ISeriesApi<"Area">>(null);
 
   useImperativeHandle(ref, () => ({
-    update: (data: { time: Time; value: number }) => {
-      seriesRef.current!.update(data);
+    update: (point) => {
+      seriesRef.current?.update(point);
     },
   }));
 
   useEffect(() => {
-    seriesRef.current = chartRef.current.api().addSeries(AreaSeries);
-    seriesRef.current.setData(data || []);
-    // seriesRef.current.setData([
-    //   { time: "2018-12-22", value: 32.51 },
-    //   { time: "2018-12-23", value: 31.11 },
-    //   { time: "2018-12-24", value: 27.02 },
-    //   { time: "2018-12-25", value: 27.32 },
-    //   { time: "2018-12-26", value: 25.17 },
-    //   { time: "2018-12-27", value: 28.89 },
-    //   { time: "2018-12-28", value: 25.46 },
-    //   { time: "2018-12-29", value: 23.92 },
-    //   { time: "2018-12-30", value: 22.68 },
-    //   { time: "2018-12-31", value: 22.67 },
-    // ]);
-  }, [data]);
+    if (!containerRef.current) return;
+    const chart = createChart(containerRef.current, {
+      autoSize: true,
+      layout: {
+        background: { type: ColorType.Solid, color: "transparent" },
+        textColor: theme.text,
+        fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+        fontSize: 11,
+        attributionLogo: false,
+      },
+      grid: {
+        vertLines: { color: theme.grid },
+        horzLines: { color: theme.grid },
+      },
+      rightPriceScale: { borderColor: theme.border },
+      timeScale: { borderColor: theme.border, timeVisible: true },
+      crosshair: {
+        vertLine: { color: theme.crosshair, style: LineStyle.Dashed },
+        horzLine: { color: theme.crosshair, style: LineStyle.Dashed },
+      },
+    });
+    seriesRef.current = chart.addSeries(AreaSeries, {
+      lineColor: theme.line,
+      lineWidth: 2,
+      topColor: theme.areaTop,
+      bottomColor: theme.areaBottom,
+      priceLineColor: theme.line,
+      crosshairMarkerBackgroundColor: theme.line,
+    });
+    chartRef.current = chart;
 
-  useLayoutEffect(() => {
-    const currentRef = chartRef.current;
-    const chart = currentRef.api();
-
-    const handleResize = () => {
-      chart.applyOptions({
-        width: chartContainerRef.current!.parentElement!.clientWidth,
-      });
-    };
-
-    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("resize", handleResize);
+      chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
     };
   }, []);
 
-  return (
-    <div className="grow relative" ref={chartContainerRef}>
-      <div className="absolute top-0 left-0 z-50 bg-gray-100 rounded-md p-2 shadow-md">
-        {header}
-      </div>
-    </div>
-  );
-}
+  useEffect(() => {
+    seriesRef.current?.setData(data || []);
+    chartRef.current?.timeScale().fitContent();
+  }, [data]);
 
-ChartComponent.displayName = "ChartComponent";
+  return <div className="h-full min-h-80 w-full" ref={containerRef} />;
+}

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { Asset } from "./models";
+import { useShallow } from "zustand/shallow";
+import type { Asset } from "./models";
 
 export type AssetStore = {
   assets: Asset[];
@@ -26,3 +27,11 @@ export const useAssetStore = create<AssetStore>((set) => ({
       return { assets: newAssets };
     }),
 }));
+
+/** Latest version of an asset pushed via websocket, falling back to the given one. */
+export function useLiveAsset(asset: Asset): Asset {
+  const assetFound = useAssetStore(
+    useShallow((state) => state.assets.find((a) => a.symbol === asset.symbol)),
+  );
+  return assetFound || asset;
+}

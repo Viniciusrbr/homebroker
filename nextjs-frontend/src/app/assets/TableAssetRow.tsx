@@ -1,37 +1,26 @@
 "use client";
+
 import { AssetShow } from "@/components/AssetShow";
-import { Button } from "@/components/ui/button";
+import { LivePrice } from "@/components/LivePrice";
+import { TradeLink } from "@/components/TradeLink";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Asset } from "@/models";
-import { useAssetStore } from "@/store";
-import Link from "next/link";
-import { useShallow } from "zustand/shallow";
+import type { Asset } from "@/models";
+import { useLiveAsset } from "@/store";
 
 export function TableAssetRow(props: { asset: Asset; walletId: string }) {
-  const { asset, walletId } = props;
-
-  const assetFound = useAssetStore(
-    useShallow((state) => state.assets.find((a) => a.symbol === asset.symbol)),
-  );
-
-  const asset_ = assetFound || asset;
+  const { walletId } = props;
+  const asset = useLiveAsset(props.asset);
 
   return (
     <TableRow>
       <TableCell>
-        <AssetShow asset={asset_} />
+        <AssetShow asset={asset} />
       </TableCell>
-      <TableCell>R$ {asset_.price}</TableCell>
-      <TableCell>
-        <Button
-          variant="link"
-          nativeButton={false}
-          render={
-            <Link href={`/assets/${asset.symbol}?wallet_id=${walletId}`} />
-          }
-        >
-          Comprar/vender
-        </Button>
+      <TableCell className="text-right">
+        <LivePrice price={asset.price} />
+      </TableCell>
+      <TableCell className="text-right">
+        <TradeLink symbol={asset.symbol} walletId={walletId} />
       </TableCell>
     </TableRow>
   );

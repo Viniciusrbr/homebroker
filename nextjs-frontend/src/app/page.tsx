@@ -1,15 +1,17 @@
+import { AssetsSync } from "@/components/AssetsSync";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState, Panel } from "@/components/Panel";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { WalletList } from "@/components/WalletList";
 import { getMyWallet } from "@/queries/queries";
-import { AssetsSync } from "@/components/AssetsSync";
 import { TableWalletAssetRow } from "./TableWalletAssetRow";
+import { WalletSummary } from "./WalletSummary";
 
 export default async function MyWalletListPage({
   searchParams,
@@ -29,33 +31,45 @@ export default async function MyWalletListPage({
   }
 
   return (
-    <div className="flex flex-col space-y-5 grow">
-      <article className="format">
-        <h1>Minha carteira</h1>
-      </article>
+    <div className="flex grow flex-col gap-8">
+      <PageHeader
+        eyebrow="Visão geral"
+        title="Minha carteira"
+        description="Suas posições com cotações atualizadas em tempo real."
+      />
 
-      <div className="overflow-x-auto w-full">
-        <Table>
-          <TableCaption>Detalhes da sua carteira</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ativo</TableHead>
-              <TableHead>Cotação</TableHead>
-              <TableHead>Quantidade</TableHead>
-              <TableHead>Comprar/vender</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {wallet.assets.map((walletAsset, key) => (
-              <TableWalletAssetRow
-                key={key}
-                walletAsset={walletAsset}
-                walletId={wallet_id}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <WalletSummary walletAssets={wallet.assets} />
+
+      <Panel>
+        {wallet.assets.length === 0 ? (
+          <EmptyState
+            title="Carteira vazia"
+            description="Vá até Ativos para fazer sua primeira compra."
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ativo</TableHead>
+                <TableHead className="text-right">Cotação</TableHead>
+                <TableHead className="text-right">Quantidade</TableHead>
+                <TableHead className="text-right">Posição</TableHead>
+                <TableHead className="w-0" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {wallet.assets.map((walletAsset) => (
+                <TableWalletAssetRow
+                  key={walletAsset.asset._id}
+                  walletAsset={walletAsset}
+                  walletId={wallet_id}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Panel>
+
       <AssetsSync
         assetsSymbols={wallet.assets.map(
           (walletAsset) => walletAsset.asset.symbol,

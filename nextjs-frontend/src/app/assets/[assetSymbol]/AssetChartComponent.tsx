@@ -1,12 +1,13 @@
 "use client";
 
+import type { Time } from "lightweight-charts";
 import { useEffect, useRef } from "react";
-
-import { ChartComponent, ChartComponentRef } from "@/components/ChartComponent";
-import { Asset } from "@/models";
-import { AssetShow } from "@/components/AssetShow";
-import { Time } from "lightweight-charts";
+import {
+  ChartComponent,
+  type ChartComponentRef,
+} from "@/components/ChartComponent";
 import { socket } from "@/lib/socket-io";
+import type { Asset } from "@/models";
 
 export function AssetChartComponent(props: {
   asset: Asset;
@@ -18,20 +19,18 @@ export function AssetChartComponent(props: {
   useEffect(() => {
     socket.connect();
     socket.emit("joinAsset", { symbol });
-    socket.on('assets/daily-created', (assetDaily) => {
-      console.log(assetDaily);
+    socket.on("assets/daily-created", (assetDaily) => {
       chartRef.current?.update({
         time: (Date.parse(assetDaily.date) / 1000) as Time,
         value: assetDaily.price,
-      })
+      });
     });
+
+    return () => {
+      socket.emit("leaveAsset", { symbol });
+      socket.off("assets/daily-created");
+    };
   }, [symbol]);
 
-  return (
-    <ChartComponent
-      ref={chartRef}
-      header={<AssetShow asset={props.asset} />}
-      data={props.data}
-    />
-  );
+  return <ChartComponent ref={chartRef} data={props.data} />;
 }

@@ -14,7 +14,6 @@ export type AssetDaily = {
 };
 
 export type WalletAsset = {
-  _id: string;
   asset: Asset;
   shares: number;
 };

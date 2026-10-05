@@ -1,3 +1,6 @@
+import { AssetsSync } from "@/components/AssetsSync";
+import { PageHeader } from "@/components/PageHeader";
+import { Panel } from "@/components/Panel";
 import {
   Table,
   TableBody,
@@ -8,7 +11,6 @@ import {
 import { WalletList } from "@/components/WalletList";
 import { getAssets, getMyWallet } from "@/queries/queries";
 import { TableAssetRow } from "./TableAssetRow";
-import { AssetsSync } from "@/components/AssetsSync";
 
 export default async function AssetsListPage({
   searchParams,
@@ -30,26 +32,32 @@ export default async function AssetsListPage({
   const assets = await getAssets();
 
   return (
-    <div className="flex flex-col space-y-5 grow">
-      <article className="format">
-        <h1>Ativos</h1>
-      </article>
-      <div className="overflow-x-auto w-full">
-        <Table className="w-full max-w-full table-fixed">
+    <div className="flex grow flex-col gap-8">
+      <PageHeader
+        eyebrow="Mercado"
+        title="Ativos"
+        description={`${assets.length} ativos disponíveis para negociação. Cotações ao vivo.`}
+      />
+      <Panel>
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Ativo</TableHead>
-              <TableHead>Cotação</TableHead>
-              <TableHead>Comprar/vender</TableHead>
+              <TableHead className="text-right">Cotação</TableHead>
+              <TableHead className="w-0" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {assets.map((asset, key) => (
-              <TableAssetRow key={key} asset={asset} walletId={wallet_id} />
+            {assets.map((asset) => (
+              <TableAssetRow
+                key={asset._id}
+                asset={asset}
+                walletId={wallet_id}
+              />
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Panel>
       <AssetsSync assetsSymbols={assets.map((asset) => asset.symbol)} />
     </div>
   );
