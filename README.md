@@ -31,7 +31,7 @@ Para isso, o sistema é composto por microsserviços independentes que se comuni
                                           └──────────────────┘
 ```
 
-O trecho Next.js ↔ NestJS ↔ MongoDB (HTTP + WebSocket) já está funcionando. A ponte via Kafka com o simulador da B3 ainda está em construção: o domínio do simulador existe, mas a mensageria não foi integrada.
+Todo o ciclo já está funcionando de ponta a ponta: o front-end fala com a API via HTTP/WebSocket, a API publica as ordens no Kafka, o simulador em Go faz o *matching* e devolve os negócios, e a API os persiste no MongoDB, cujas Change Streams levam os novos preços de volta ao front-end.
 
 ### Componentes
 
@@ -40,16 +40,27 @@ O trecho Next.js ↔ NestJS ↔ MongoDB (HTTP + WebSocket) já está funcionando
 | **Front-end** | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui, Lightweight Charts, Zustand, Socket.IO Client | Interface do usuário: listagem de ativos, gráficos de cotação, formulário de ordens e visualização da carteira, com estado sincronizado em tempo real. |
 | **API da corretora** | NestJS 12, Mongoose, MongoDB | Gerencia ordens de compra e venda, organiza os dados de usuários/carteiras e disponibiliza as informações para o front-end. |
 | **Comunicação em tempo real** | WebSockets (Socket.IO) + MongoDB Change Streams | Envio contínuo e imediato de cotações, cotações diárias e criação de ordens, com salas (*rooms*) por símbolo de ativo. |
-| **Mensageria** | Apache Kafka | Ponto central de comunicação assíncrona e de alta resiliência entre a corretora e o simulador da bolsa. |
-| **Simulador da B3** | Go | Microsserviço que simula a bolsa de valores: processa todas as transações de compra e venda e as consultas de mercado, explorando a performance e a concorrência do Go (goroutines e channels) para garantir velocidade de execução, disponibilidade contínua e confiabilidade nas informações. |
+| **Mensageria** | Apache Kafka (Confluent), `@confluentinc/kafka-javascript`, `confluent-kafka-go` | Ponto central de comunicação assíncrona e de alta resiliência entre a corretora e o simulador da bolsa. No NestJS, um transporte customizado ([`ConfluentKafkaServer`](./nestjs-api/src/kafka/confluent-kafka-server.ts)) integra o cliente da Confluent aos `@EventPattern` do `@nestjs/microservices`. |
+| **Simulador da B3** | Go 1.27 | Microsserviço que simula a bolsa de valores: processa todas as transações de compra e venda e as consultas de mercado, explorando a performance e a concorrência do Go (goroutines e channels) para garantir velocidade de execução, disponibilidade contínua e confiabilidade nas informações. |
 | **Infraestrutura** | Docker / Docker Compose | Execução de todos os microsserviços em containers. |
 
 ### Fluxo de uma ordem
 
 1. O usuário cria uma ordem de compra ou venda pelo front-end, que a envia via WebSocket (`orders/create`).
-2. A API NestJS persiste a ordem no MongoDB com status `PENDING` e — nas próximas etapas do projeto — a publicará em um tópico do Kafka.
-3. O simulador da B3 (Go) consome a ordem, insere-a no livro de ordens (*order book*), faz o *matching* com ordens contrárias e publica o resultado (execução total, parcial ou falha) em outro tópico.
-4. A API consome o resultado, atualiza o status da ordem (`OPEN`, `CLOSED` ou `FAILED`), ajusta a carteira do usuário e notifica o front-end via WebSocket.
+2. A API NestJS persiste a ordem no MongoDB com status `PENDING` e a publica no tópico `input` do Kafka.
+3. O simulador da B3 (Go) consome a ordem, insere-a no livro de ordens (*order book*), faz o *matching* com ordens contrárias e publica o resultado (execução total ou parcial, com as transações realizadas) no tópico `output`.
+4. O consumidor Kafka da API ([`OrderConsumer`](./nestjs-api/src/orders/orders.consumer.ts)) recebe o resultado e, numa única transação do MongoDB:
+   - registra um **Trade** e atualiza `partial` e `status` (`OPEN` ou `CLOSED`) da ordem;
+   - se a ordem foi fechada, ajusta a posição na carteira do usuário;
+   - se foi uma compra fechada, atualiza o preço do ativo e cria a cotação diária, se ainda não existir.
+5. As Change Streams detectam a mudança de preço/cotação e a API a envia ao front-end via WebSocket.
+
+### Tópicos Kafka
+
+| Tópico | Produtor → Consumidor | Payload |
+| --- | --- | --- |
+| `input` | NestJS → Go | `order_id`, `investor_id`, `asset_id`, `shares`, `price`, `order_type` |
+| `output` | Go → NestJS | `order_id`, `investor_id`, `asset_id`, `order_type`, `status`, `partial`, `shares` e a lista `transactions` (`transaction_id`, `buyer_id`, `seller_id`, `asset_id`, `price`, `shares`) |
 
 ### Tempo real (WebSocket)
 
@@ -69,7 +80,9 @@ No front-end, o componente [`AssetsSync`](./nextjs-frontend/src/components/Asset
 
 ### Simulador da B3 (Go)
 
-O núcleo de domínio do simulador já está implementado em [`go-microservice/internal/market/entity`](./go-microservice/internal/market/entity):
+O ponto de entrada é [`cmd/trade/main.go`](./go-microservice/cmd/trade/main.go): ele consome o tópico `input` (grupo `trade`) em uma goroutine, converte cada mensagem em `Order` ([`transformer`](./go-microservice/internal/market/transformer/transformer.go) + [`dto`](./go-microservice/internal/market/dto/dto.go)), envia-a ao livro de ordens e publica cada ordem processada no tópico `output`. O transporte Kafka fica em [`infra/kafka`](./go-microservice/infra/kafka).
+
+O núcleo de domínio fica em [`go-microservice/internal/market/entity`](./go-microservice/internal/market/entity):
 
 - **`Book`** — livro de ordens. Recebe ordens pelo channel `IncomingOrders`, mantém filas (`orderQueue`) de compra e venda por ativo, executa o *matching* e devolve as ordens processadas pelo channel `ProcessedOrders`, coordenadas por um `sync.WaitGroup`.
 - **`Order`** — ordem com `Shares`, `PendingShares`, `Price`, `OrderType` (`BUY`/`SELL`) e `Status` (`OPEN`/`CLOSED`), suportando execução parcial via `ApplyTrade`.
@@ -77,19 +90,20 @@ O núcleo de domínio do simulador já está implementado em [`go-microservice/i
 - **`OrderProcessor`** — calcula a quantidade negociável, atualiza as posições dos investidores e o estado das ordens.
 - **`Investor`** / **`Asset`** — investidor com suas posições e o ativo negociado.
 
-Ainda faltam a camada de transporte (consumer/producer Kafka) e o `main.go`.
-
 ## Estrutura do repositório
 
 ```
 homebroker/
 ├── nestjs-api/        # API da corretora (NestJS + MongoDB)
-│   ├── .docker/       # Dockerfile do MongoDB em modo replica set
+│   ├── .docker/       # MongoDB em replica set e script de start do container
 │   ├── assets/        # Imagens (logos) dos ativos
 │   ├── src/
+│   │   ├── _cmd/      # Entrypoint do consumidor Kafka
 │   │   ├── assets/    # Módulo de ativos (ações)
-│   │   ├── orders/    # Módulo de ordens de compra e venda
-│   │   └── wallets/   # Módulo de carteiras
+│   │   ├── kafka/     # Transporte Kafka customizado (Confluent)
+│   │   ├── orders/    # Ordens, trades e consumidor do tópico `output`
+│   │   ├── wallets/   # Módulo de carteiras
+│   │   └── simulate-assets-price.command.ts  # Comando de seed/simulação
 │   └── docker-compose.yaml
 ├── kafka/             # Zookeeper, Kafka e Control Center (compartilhado)
 ├── nextjs-frontend/   # Interface web (Next.js)
@@ -99,8 +113,13 @@ homebroker/
 │       ├── lib/       # Cliente Socket.IO e utilitários
 │       ├── queries/   # Funções de acesso à API
 │       └── store.ts   # Store Zustand de ativos (preços em tempo real)
-├── go-microservice/   # Simulador da B3 (Go) — em desenvolvimento
-│   └── internal/market/entity/   # Livro de ordens, ordens, transações e investidores
+├── go-microservice/   # Simulador da B3 (Go)
+│   ├── cmd/trade/     # main.go: liga o Kafka ao livro de ordens
+│   ├── infra/kafka/   # Consumer e producer Kafka
+│   └── internal/market/
+│       ├── entity/       # Livro de ordens, ordens, transações e investidores
+│       ├── dto/          # Formato das mensagens dos tópicos
+│       └── transformer/  # Conversão DTO ↔ entidades
 ├── docker-compose.yaml  # Sobe todo o ecossistema
 └── api.http           # Requisições de exemplo (REST Client)
 ```
@@ -109,7 +128,8 @@ homebroker/
 
 - **Asset** — ativo negociado: `name`, `symbol`, `price`, `image`.
 - **Wallet** — carteira de um usuário, contendo uma lista de **WalletAsset** (`asset`, `shares`).
-- **Order** — ordem de negociação: `wallet`, `asset`, `shares`, `partial`, `price`, `type` (`BUY` | `SELL`) e `status` (`PENDING` | `OPEN` | `CLOSED` | `FAILED`).
+- **Order** — ordem de negociação: `wallet`, `asset`, `shares`, `partial`, `price`, `type` (`BUY` | `SELL`), `status` (`PENDING` | `OPEN` | `CLOSED` | `FAILED`) e `trades`.
+- **Trade** — negócio executado pelo simulador para uma ordem: `order`, `broker_trade_id`, `related_investor_id` (contraparte), `shares`, `price`.
 - **AssetDaily** — cotação diária de um ativo (`date`, `price`), usada nos gráficos.
 
 ## API (NestJS)
@@ -161,7 +181,12 @@ Cria ativos, duas carteiras e as posições iniciais (apaga os dados existentes)
 docker compose exec nest node dist/command.js simulate-assets-price
 ```
 
-Responda `n` às perguntas para apenas criar os dados base; o processo não encerra sozinho, finalize com `Ctrl+C`.
+O comando faz duas perguntas:
+
+- **Gerar ordens de compra e venda?** — `y` cria ~100 pares de ordens `SELL`/`BUY` de AMZN (uma a cada 2 s), publicadas no Kafka; o simulador as casa e os preços passam a variar em tempo real no front-end.
+- **Gerar ordens de fechamento?** — `y` também fecha cada par diretamente na API (sem passar pelo simulador).
+
+Responda `n` para apenas criar os dados base. O processo não encerra sozinho; finalize com `Ctrl+C`.
 
 ### Logs
 
@@ -202,12 +227,14 @@ pnpm lint        # biome
 - [x] Criação de ordens via WebSocket
 - [x] Sincronização do estado de ativos no front-end com Zustand
 - [x] Núcleo de domínio do simulador da B3 em Go: livro de ordens, *matching* e execução parcial
-- [ ] Atualizações de ordens e de carteira em tempo real para o front-end
-- [ ] Integração com Apache Kafka (publicação e consumo de ordens)
-- [ ] Camada de transporte do simulador da B3 (consumer/producer Kafka e `main.go`)
-- [ ] Testes do domínio do simulador em Go
-- [ ] Serviço de arquivos para as imagens dos ativos (hoje o presenter aponta para `localhost:9000`)
+- [x] Integração com Apache Kafka (publicação de ordens no `input` e consumo de negócios do `output`)
+- [x] Camada de transporte do simulador da B3 (consumer/producer Kafka e `main.go`)
+- [x] Registro de trades, atualização de carteira, preço e cotação diária a partir dos negócios executados
+- [x] Servidor de imagens dos ativos com URL configurável (`ASSETS_URL`)
 - [x] Docker Compose unificado para subir todo o ecossistema (front-end, API, Kafka, MongoDB e simulador)
+- [ ] Atualizações de ordens e de carteira em tempo real para o front-end
+- [ ] Tratamento de ordens com falha (`FAILED`) e validação de saldo antes de vender
+- [ ] Testes do domínio do simulador em Go
 - [ ] Autenticação de usuários
 
 ## Licença
