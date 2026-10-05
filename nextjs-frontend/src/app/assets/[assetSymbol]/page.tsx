@@ -8,12 +8,12 @@ import { Panel } from "@/components/Panel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WalletList } from "@/components/WalletList";
 import { type Asset, OrderType } from "@/models";
-import { getAssetDailies, getMyWallet } from "@/queries/queries";
+import { API_URL, getAssetDailies, getMyWallet } from "@/queries/queries";
 import { AssetChartComponent } from "./AssetChartComponent";
 import { AssetPrice } from "./AssetPrice";
 
 export async function getAsset(symbol: string): Promise<Asset> {
-  const response = await fetch(`http://localhost:3000/assets/${symbol}`);
+  const response = await fetch(`${API_URL}/assets/${symbol}`);
   return response.json();
 }
 

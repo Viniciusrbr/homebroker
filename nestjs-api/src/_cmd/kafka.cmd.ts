@@ -6,7 +6,7 @@ async function bootstrap() {
   const app = await NestFactory.createMicroservice(AppModule, {
     strategy: new ConfluentKafkaServer({
       server: {
-        'bootstrap.servers': 'localhost:9094',
+        'bootstrap.servers': process.env.KAFKA_BROKER ?? 'localhost:9094',
       },
       consumer: {
         allowAutoTopicCreation: true,

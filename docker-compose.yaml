@@ -1,0 +1,4 @@
+include:
+  - ./go-microservice/docker-compose.yaml
+  - ./nestjs-api/docker-compose.yaml
+  - ./nextjs-frontend/docker-compose.yaml

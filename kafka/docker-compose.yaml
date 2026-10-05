@@ -6,6 +6,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.9.0
+    command: bash -c "sleep 30 && /etc/confluent/docker/run"
     depends_on:
       - zookeeper
     ports:
@@ -20,7 +21,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,OUTSIDE://host.docker.internal:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - host.docker.internal:host-gateway
        
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.9.0
@@ -28,8 +29,8 @@ services:
     depends_on:
       - kafka
     ports:
-      - "9021:9021"
+      - 9021:9021
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'kafka:9092'
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka:9092
       CONTROL_CENTER_REPLICATION_FACTOR: 1
       PORT: 9021

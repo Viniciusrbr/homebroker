@@ -7,6 +7,7 @@ import (
 	"microservice/internal/market/dto"
 	"microservice/internal/market/entity"
 	"microservice/internal/market/transformer"
+	"os"
 	"sync"
 
 	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
@@ -22,25 +23,31 @@ func main() {
 	// Canal para receber mensagens do Kafka
 	kafkaMsgChan := make(chan *ckafka.Message)
 
+	// Endereço do broker Kafka (no Docker, via host.docker.internal)
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	if kafkaBroker == "" {
+		kafkaBroker = "localhost:9094"
+	}
+
 	// Configuração do consumidor Kafka
 	// - bootstrap.servers: endereço do broker Kafka
 	// - group.id: identificador do grupo de consumo
 	// - auto.offset.reset: de onde começar a ler as mensagens
 	consumerConfig := &ckafka.ConfigMap{
-		"bootstrap.servers": "host.docker.internal:9094",
+		"bootstrap.servers": kafkaBroker,
 		"group.id":          "trade",
-		"auto.offset.reset": "latest",
+		"auto.offset.reset": "earliest",
 	}
 
 	// Configuração do produtor Kafka
 	// - bootstrap.servers: endereço do broker Kafka
 	producerConfig := &ckafka.ConfigMap{
-		"bootstrap.servers": "host.docker.internal:9094",
+		"bootstrap.servers": kafkaBroker,
 	}
 
 	// Inicializa produtor e consumidor Kafka
 	producer := kafka.NewKafkaProducer(producerConfig)
-	consumer := kafka.NewConsumer(consumerConfig, []string{"orders"})
+	consumer := kafka.NewConsumer(consumerConfig, []string{"input"})
 
 	// Inicia o consumo de mensagens em uma goroutine separada
 	go consumer.Consume(kafkaMsgChan)
@@ -79,7 +86,7 @@ func main() {
 
 		// Imprime e publica o resultado no Kafka
 		fmt.Println(string(jsonOutput))
-		producer.Publish(jsonOutput, []byte("processed_orders"), "processed_orders")
+		producer.Publish(jsonOutput, []byte("output"), "output")
 	}
 
 }

@@ -43,7 +43,7 @@ import * as kafkaLib from '@confluentinc/kafka-javascript';
       provide: kafkaLib.KafkaJS.Kafka,
       useFactory() {
         return new kafkaLib.KafkaJS.Kafka({
-          'bootstrap.servers': 'localhost:9094',
+          'bootstrap.servers': process.env.KAFKA_BROKER ?? 'localhost:9094',
         });
       },
     },

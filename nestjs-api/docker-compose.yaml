@@ -1,4 +1,24 @@
+include:
+  - ../kafka/docker-compose.yaml
+
 services:
+  nest:
+    build: .
+    volumes:
+      - .:/home/node/app
+    ports:
+      - 3000:3000
+      - 9000:9000
+    environment:
+      MONGO_URL: mongodb://root:root@host.docker.internal:27017/nest?authSource=admin&directConnection=true
+      KAFKA_BROKER: host.docker.internal:9094
+      ASSETS_HOST: 0.0.0.0
+    depends_on:
+      - mongo
+      - kafka
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
   mongo:
     build: ./.docker/mongodb
     environment:

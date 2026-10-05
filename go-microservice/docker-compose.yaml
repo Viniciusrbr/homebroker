@@ -1,0 +1,15 @@
+include:
+  - ../kafka/docker-compose.yaml
+
+services:
+  golang:
+    build: .
+    volumes:
+      - .:/app
+    environment:
+      KAFKA_BROKER: host.docker.internal:9094
+    depends_on:
+      - kafka
+    restart: on-failure
+    extra_hosts:
+      - host.docker.internal:host-gateway

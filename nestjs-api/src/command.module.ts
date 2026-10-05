@@ -11,7 +11,8 @@ import { ConfirmGenerateOrders, ConfirmGenerateOrdersClosed, SimulateAssetsPrice
 @Module({
   imports: [
     MongooseModule.forRoot(
-      'mongodb://root:root@localhost:27017/nest?authSource=admin',
+      process.env.MONGO_URL ??
+        'mongodb://root:root@localhost:27017/nest?authSource=admin&directConnection=true',
     ),
     AssetsModule,
     WalletsModule,

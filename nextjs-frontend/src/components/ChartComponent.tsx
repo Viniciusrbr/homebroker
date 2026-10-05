@@ -39,7 +39,13 @@ export function ChartComponent(props: {
 
   useImperativeHandle(ref, () => ({
     update: (point) => {
-      seriesRef.current?.update(point);
+      const series = seriesRef.current;
+      if (!series) return;
+      // lightweight-charts throws when a point is older than the last one;
+      // live events can arrive out of order, so drop stale points.
+      const last = series.data().at(-1);
+      if (last && (point.time as number) < (last.time as number)) return;
+      series.update(point);
     },
   }));
 

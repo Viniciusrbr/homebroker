@@ -91,6 +91,7 @@ homebroker/
 │   │   ├── orders/    # Módulo de ordens de compra e venda
 │   │   └── wallets/   # Módulo de carteiras
 │   └── docker-compose.yaml
+├── kafka/             # Zookeeper, Kafka e Control Center (compartilhado)
 ├── nextjs-frontend/   # Interface web (Next.js)
 │   └── src/
 │       ├── app/       # Rotas: /, /assets, /assets/[assetSymbol], /orders
@@ -100,6 +101,7 @@ homebroker/
 │       └── store.ts   # Store Zustand de ativos (preços em tempo real)
 ├── go-microservice/   # Simulador da B3 (Go) — em desenvolvimento
 │   └── internal/market/entity/   # Livro de ordens, ordens, transações e investidores
+├── docker-compose.yaml  # Sobe todo o ecossistema
 └── api.http           # Requisições de exemplo (REST Client)
 ```
 
@@ -133,41 +135,50 @@ Exemplos prontos de requisições estão em [`api.http`](./api.http) (compatíve
 
 ## Como executar (ambiente de desenvolvimento)
 
-### Pré-requisitos
-
-- [Node.js](https://nodejs.org/) 22+
-- [pnpm](https://pnpm.io/)
-- [Docker](https://www.docker.com/) e Docker Compose
-- [Go](https://go.dev/) 1.27+ (para o simulador da B3)
-
-### 1. Banco de dados
+Todo o ecossistema sobe com Docker Compose a partir da raiz do repositório. O código de cada projeto é montado como volume, então alterações locais recarregam automaticamente.
 
 ```bash
-cd nestjs-api
-docker compose up -d
+docker compose up -d --build
 ```
 
-Sobe um MongoDB 8 configurado como replica set (`rs0`), com usuário `root` / senha `root`, na porta `27017`.
+| Serviço | Endereço |
+| --- | --- |
+| Front-end (Next.js) | http://localhost:3001 |
+| API (NestJS) | http://localhost:3000 |
+| Imagens dos ativos | http://localhost:9000 |
+| Kafka Control Center | http://localhost:9021 |
+| MongoDB (`root` / `root`) | `localhost:27017` |
 
-### 2. API da corretora
+O Kafka leva uns 30 segundos para ficar disponível; até lá, o simulador em Go registra erros de conexão e reconecta sozinho.
+
+O container `nest` roda a API, o consumidor Kafka (`dist/_cmd/kafka.cmd.js`) e o servidor de imagens ([`.docker/start-dev.sh`](./nestjs-api/.docker/start-dev.sh)).
+
+### Popular o banco
+
+Cria ativos, duas carteiras e as posições iniciais (apaga os dados existentes):
 
 ```bash
-cd nestjs-api
-pnpm install
-pnpm start:dev
+docker compose exec nest node dist/command.js simulate-assets-price
 ```
 
-A API fica disponível em `http://localhost:3000`.
+Responda `n` às perguntas para apenas criar os dados base; o processo não encerra sozinho, finalize com `Ctrl+C`.
 
-### 3. Front-end
+### Logs
 
 ```bash
-cd nextjs-frontend
-pnpm install
-pnpm dev
+docker compose logs -f nest golang next
 ```
 
-A aplicação fica disponível em `http://localhost:3000` (ou na próxima porta livre, caso a API já esteja usando a `3000`).
+### Variáveis de ambiente
+
+Fora do Docker, os valores padrão apontam para `localhost`, então cada projeto continua rodando com `pnpm start:dev` / `pnpm dev` / `go run cmd/trade/main.go`.
+
+| Variável | Projeto | Uso |
+| --- | --- | --- |
+| `MONGO_URL` | nestjs-api | String de conexão do MongoDB |
+| `KAFKA_BROKER` | nestjs-api, go-microservice | Endereço do broker Kafka |
+| `ASSETS_URL` / `ASSETS_HOST` | nestjs-api | URL pública e host de bind do servidor de imagens |
+| `API_URL` | nextjs-frontend | URL da API usada nas chamadas feitas pelo servidor do Next |
 
 ### Testes e lint
 
@@ -196,7 +207,7 @@ pnpm lint        # biome
 - [ ] Camada de transporte do simulador da B3 (consumer/producer Kafka e `main.go`)
 - [ ] Testes do domínio do simulador em Go
 - [ ] Serviço de arquivos para as imagens dos ativos (hoje o presenter aponta para `localhost:9000`)
-- [ ] Docker Compose unificado para subir todo o ecossistema (front-end, API, Kafka, MongoDB e simulador)
+- [x] Docker Compose unificado para subir todo o ecossistema (front-end, API, Kafka, MongoDB e simulador)
 - [ ] Autenticação de usuários
 
 ## Licença
