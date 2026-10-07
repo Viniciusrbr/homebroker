@@ -232,10 +232,36 @@ pnpm lint        # biome
 - [x] Registro de trades, atualização de carteira, preço e cotação diária a partir dos negócios executados
 - [x] Servidor de imagens dos ativos com URL configurável (`ASSETS_URL`)
 - [x] Docker Compose unificado para subir todo o ecossistema (front-end, API, Kafka, MongoDB e simulador)
-- [ ] Atualizações de ordens e de carteira em tempo real para o front-end
-- [ ] Tratamento de ordens com falha (`FAILED`) e validação de saldo antes de vender
-- [ ] Testes do domínio do simulador em Go
-- [ ] Autenticação de usuários
+
+### Melhorias futuras
+
+**Segurança e validação**
+
+- [ ] Validação das requisições HTTP (DTOs com `class-validator` / `ValidationPipe`)
+- [ ] Validação das mensagens recebidas via WebSocket
+- [ ] Autenticação de usuários na API e no Next.js
+- [ ] Impedir que um usuário se inscreva no WebSocket de notificação de ordens que não são dele
+
+**Carteira e ordens**
+
+- [ ] Saldo em reais para a carteira
+- [ ] Em ordens de venda, verificar se a carteira tem saldo suficiente do ativo
+- [ ] Atualização de saldo orientada a eventos, separando a finalização da ordem da atualização do saldo do ativo na carteira
+- [ ] Reprocessamento da finalização das ordens em caso de falha (incluindo o tratamento do status `FAILED`)
+
+**Tempo real e front-end**
+
+- [ ] Evento de WebSocket para atualizar o saldo do ativo na carteira
+- [ ] Notificação no Next.js (via WebSocket) quando uma ordem for executada
+- [ ] Não emitir eventos de WebSocket quando não houver clientes inscritos
+
+**Performance**
+
+- [ ] Cache no servidor para consultas de ativos e ordens fora do horário de pregão, quando os preços ficam fixos
+
+**Qualidade**
+
+- [ ] Testes da API, do front-end e do domínio do simulador em Go
 
 ## Licença
 
