@@ -1,0 +1,7 @@
+# Só vale ao subir pela raiz: o Next espera a API responder antes de renderizar.
+# Fica fora do compose do front-end para ele continuar subindo sozinho.
+services:
+  next:
+    depends_on:
+      nest:
+        condition: service_healthy

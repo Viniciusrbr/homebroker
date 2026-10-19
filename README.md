@@ -169,7 +169,9 @@ docker compose up -d --build
 | Kafka Control Center | http://localhost:9021 |
 | MongoDB (`root` / `root`) | `localhost:27017` |
 
-O Kafka leva uns 30 segundos para ficar disponível; até lá, o simulador em Go registra erros de conexão e reconecta sozinho.
+A subida leva cerca de 1 minuto: o Compose espera o MongoDB e o Kafka ficarem prontos antes de iniciar a API e o simulador em Go, e o front-end só inicia quando a API já responde.
+
+Para desligar, use `docker compose stop` (mantém os dados) ou `docker compose down` (remove os containers e, com eles, os dados do MongoDB, sendo preciso popular o banco de novo).
 
 O container `nest` roda a API, o consumidor Kafka (`dist/_cmd/kafka.cmd.js`) e o servidor de imagens ([`.docker/start-dev.sh`](./nestjs-api/.docker/start-dev.sh)).
 

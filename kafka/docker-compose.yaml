@@ -22,7 +22,13 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
     extra_hosts:
       - host.docker.internal:host-gateway
-       
+    # o broker só aceita conexões depois do sleep e da inicialização
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 5s
+      start_period: 30s
+      retries: 30
+
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.9.0
     hostname: control-center

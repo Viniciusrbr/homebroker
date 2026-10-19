@@ -9,7 +9,8 @@ services:
     environment:
       KAFKA_BROKER: host.docker.internal:9094
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     restart: on-failure
     extra_hosts:
       - host.docker.internal:host-gateway

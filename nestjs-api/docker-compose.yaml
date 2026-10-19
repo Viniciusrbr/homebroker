@@ -13,11 +13,20 @@ services:
       MONGO_URL: mongodb://root:root@host.docker.internal:27017/nest?authSource=admin&directConnection=true
       KAFKA_BROKER: host.docker.internal:9094
       ASSETS_HOST: 0.0.0.0
+    # a API conecta no Mongo e no Kafka ao iniciar e cai se eles ainda não estiverem prontos
     depends_on:
-      - mongo
-      - kafka
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     extra_hosts:
       - host.docker.internal:host-gateway
+    # pronta só depois do pnpm install e do build; num clone novo isso leva mais tempo
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/assets').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 5s
+      start_period: 60s
+      retries: 60
 
   mongo:
     build: ./.docker/mongodb
@@ -26,3 +35,8 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=root
     ports:
       - 27017:27017
+    # o usuário root só existe depois que o replica set é iniciado
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh -u $$MONGO_INITDB_ROOT_USERNAME -p $$MONGO_INITDB_ROOT_PASSWORD --quiet --eval \"db.adminCommand('ping')\""]
+      interval: 5s
+      retries: 30
