@@ -239,7 +239,7 @@ pnpm lint        # biome
 
 **Segurança e validação**
 
-- [ ] Validação das requisições HTTP (DTOs com `class-validator` / `ValidationPipe`)
+- [x] Validação das requisições HTTP (DTOs com `class-validator` / `ValidationPipe`)
 - [ ] Validação das mensagens recebidas via WebSocket
 - [ ] Autenticação de usuários na API e no Next.js
 - [ ] Impedir que um usuário se inscreva no WebSocket de notificação de ordens que não são dele

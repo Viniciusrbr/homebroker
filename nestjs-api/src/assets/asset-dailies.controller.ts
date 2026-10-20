@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { AssetDailiesService } from './asset-dalies.service.js';
+import { CreateAssetDailyDto } from './dto/create-asset-daily.dto.js';
 
 @Controller('assets/:symbol/dailies')
 export class AssetsDailiesController {
@@ -12,7 +13,7 @@ export class AssetsDailiesController {
 
   @Post()
   create(
-    @Body() dto: { date: string; price: number },
+    @Body() dto: CreateAssetDailyDto,
     @Param('symbol') symbol: string,
   ) {
     return this.assetsDailiesService.create({
