@@ -24,6 +24,9 @@ const orderSchema = z.object({
 
 type OrderFormValues = z.infer<typeof orderSchema>;
 
+// resposta da API quando a mensagem é recusada pela validação
+type WsError = { status: "error"; message: string | string[] };
+
 export function OrderForm(props: {
   asset: Asset;
   walletId: string;
@@ -53,7 +56,7 @@ export function OrderForm(props: {
     }
 
     try {
-      const newOrder: Order = await socket
+      const response: Order | WsError = await socket
         .timeout(5000)
         .emitWithAck("orders/create", {
           assetId: props.asset._id,
@@ -61,10 +64,20 @@ export function OrderForm(props: {
           type: props.type,
           ...values,
         });
+
+      if (response.status === "error") {
+        toast.add({
+          type: "error",
+          title: "Ordem recusada",
+          description: [response.message].flat().join(". "),
+        });
+        return;
+      }
+
       toast.add({
         type: "success",
         title: "Ordem criada",
-        description: `Ordem de ${translatedType} de ${newOrder.shares} ações de ${props.asset.symbol} criada com sucesso`,
+        description: `Ordem de ${translatedType} de ${response.shares} ações de ${props.asset.symbol} criada com sucesso`,
       });
     } catch {
       toast.add({

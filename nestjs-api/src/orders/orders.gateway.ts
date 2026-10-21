@@ -1,19 +1,21 @@
-import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import { UseFilters } from '@nestjs/common';
+import {
+  MessageBody,
+  SubscribeMessage,
+  WebSocketGateway,
+} from '@nestjs/websockets';
 import { OrdersService } from './orders.service.js';
+import { CreateOrderDto } from './dto/create-order.dto.js';
+import { WsExceptionsFilter } from '../common/ws-exceptions.filter.js';
 
 @WebSocketGateway({ cors: true })
+@UseFilters(WsExceptionsFilter)
 export class OrdersGateway {
   constructor(private orderService: OrdersService) {}
 
   @SubscribeMessage('orders/create')
-  async handleMessage(client: any, payload: any) {
-    const order = await this.orderService.create({
-      assetId: payload.assetId,
-      walletId: payload.walletId,
-      type: payload.type,
-      shares: payload.shares,
-      price: payload.price,
-    });
+  async handleMessage(@MessageBody() payload: CreateOrderDto) {
+    const order = await this.orderService.create(payload);
     return order;
   }
 }
