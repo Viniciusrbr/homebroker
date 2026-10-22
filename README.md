@@ -255,7 +255,7 @@ pnpm lint        # biome
 
 - [ ] Evento de WebSocket para atualizar o saldo do ativo na carteira
 - [ ] Notificação no Next.js (via WebSocket) quando uma ordem for executada
-- [ ] Não emitir eventos de WebSocket quando não houver clientes inscritos
+- [x] Não emitir eventos de WebSocket quando não houver clientes inscritos
 
 **Performance**
 

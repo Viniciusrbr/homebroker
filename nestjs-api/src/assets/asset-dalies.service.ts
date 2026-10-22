@@ -26,7 +26,7 @@ export class AssetDailiesService {
 
   subscribeCreatedEvents(): Observable<AssetDaily & { asset: Asset }> {
     return new Observable((observer) => {
-      this.assetDailySchema
+      const stream = this.assetDailySchema
         .watch(
           [
             {
@@ -43,6 +43,8 @@ export class AssetDailiesService {
             .populate('asset');
           observer.next(assetDaily! as AssetDaily & { asset: Asset });
         });
+
+      return () => stream.close();
     });
   }
 }
