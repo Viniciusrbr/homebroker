@@ -5,11 +5,9 @@ set -e
 pnpm install
 
 rm -rf dist
-pnpm start:dev &
 
-# o consumidor Kafka reaproveita o build em watch da API
-until [ -f dist/_cmd/kafka.cmd.js ]; do sleep 1; done
-node --watch dist/_cmd/kafka.cmd.js &
+# a API e o consumidor Kafka reaproveitam o mesmo build em watch (ver dev-processes.sh)
+pnpm exec nest start --watch --exec "sh .docker/dev-processes.sh" &
 
 pnpm assets-image &
 

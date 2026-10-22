@@ -35,7 +35,7 @@ func TransformOutput(order *entity.Order) *dto.OrderOutput {
 			SellerID:      t.SellingOrder.Investor.ID,
 			AssetID:       t.SellingOrder.Asset.ID,
 			Price:         t.Price,
-			Shares:        t.SellingOrder.Shares - t.SellingOrder.PendingShares,
+			Shares:        t.Shares,
 		}
 		transactionsOutput = append(transactionsOutput, transactionOutput)
 	}
