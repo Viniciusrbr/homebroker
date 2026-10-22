@@ -247,7 +247,7 @@ pnpm lint        # biome
 **Carteira e ordens**
 
 - [ ] Saldo em reais para a carteira
-- [ ] Em ordens de venda, verificar se a carteira tem saldo suficiente do ativo
+- [x] Em ordens de venda, verificar se a carteira tem saldo suficiente do ativo
 - [ ] Atualização de saldo orientada a eventos, separando a finalização da ordem da atualização do saldo do ativo na carteira
 - [ ] Reprocessamento da finalização das ordens em caso de falha (incluindo o tratamento do status `FAILED`)
 

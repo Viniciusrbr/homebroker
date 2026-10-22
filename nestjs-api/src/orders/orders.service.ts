@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto.js';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import {
@@ -39,6 +39,10 @@ export class OrdersService implements OnModuleInit {
   }
 
   async create(createOrderDto: CreateOrderDto) {
+    if (createOrderDto.type === OrderType.SELL) {
+      await this.ensureSharesAvailable(createOrderDto);
+    }
+
     const order = await this.orderSchema.create({
       wallet: createOrderDto.walletId,
       asset: createOrderDto.assetId,
@@ -65,6 +69,36 @@ export class OrdersService implements OnModuleInit {
       ],
     });
     return order;
+  }
+
+  // a parte executada de uma venda sai da carteira a cada negócio (createTrade), então
+  // o que ainda falta executar (partial) das vendas pendentes ou abertas fica reservado
+  private async ensureSharesAvailable({
+    walletId,
+    assetId,
+    shares,
+  }: CreateOrderDto) {
+    const [walletAsset, [reserved]] = await Promise.all([
+      this.walletAssetSchema.findOne({ wallet: walletId, asset: assetId }),
+      this.orderSchema.aggregate<{ shares: number }>([
+        {
+          $match: {
+            wallet: walletId,
+            asset: assetId,
+            type: OrderType.SELL,
+            status: { $in: [OrderStatus.PENDING, OrderStatus.OPEN] },
+          },
+        },
+        { $group: { _id: null, shares: { $sum: '$partial' } } },
+      ]),
+    ]);
+
+    const available = (walletAsset?.shares ?? 0) - (reserved?.shares ?? 0);
+    if (shares > available) {
+      throw new BadRequestException(
+        `Insufficient shares to sell: ${Math.max(available, 0)} available`,
+      );
+    }
   }
 
   findAll(filter: { walletId: string }) {
@@ -98,6 +132,17 @@ export class OrdersService implements OnModuleInit {
       if (!order) {
         throw new Error('Order not found');
       }
+
+      // cada mensagem do simulador traz todas as transações da ordem, e o Kafka pode
+      // reentregar mensagens: um negócio já registrado não pode mexer na carteira de novo
+      const alreadyRecorded = await this.tradeSchema
+        .exists({ order: order._id, broker_trade_id: dto.brokerTradeId })
+        .session(session);
+      if (alreadyRecorded) {
+        await session.abortTransaction();
+        return order;
+      }
+
       const tradeDocs = await this.tradeSchema.create(
         [
           {
@@ -145,41 +190,40 @@ export class OrdersService implements OnModuleInit {
         }
       }
 
-      if (dto.status === OrderStatus.CLOSED) {
-        const walletAsset = await this.walletAssetSchema
-          .findOne({
-            wallet: order.wallet,
-            asset: order.asset,
-          })
-          .session(session);
+      // a carteira muda a cada negócio, inclusive nas execuções parciais; o saldo da
+      // venda já foi verificado na criação da ordem (ensureSharesAvailable)
+      const walletAsset = await this.walletAssetSchema
+        .findOne({
+          wallet: order.wallet,
+          asset: order.asset,
+        })
+        .session(session);
 
-        if (!walletAsset && order.type === OrderType.SELL) {
-          throw new Error('Asset not found in wallet');
-        }
+      if (!walletAsset && order.type === OrderType.SELL) {
+        throw new Error('Asset not found in wallet');
+      }
 
-        if (walletAsset) {
-          //@TODO - verificar se o saldo é suficiente
-          walletAsset.shares +=
-            order.type === OrderType.BUY ? dto.shares : -dto.shares;
-          await walletAsset.save({ session });
-        } else {
-          const walletAssetDocs = await this.walletAssetSchema.create(
-            [
-              {
-                wallet: order.wallet,
-                asset: order.asset,
-                shares: dto.shares,
-              },
-            ],
-            { session },
-          );
-          const walletAsset = walletAssetDocs[0];
-          const wallet = (await this.walletSchema.findById(
-            order.wallet,
-          )) as WalletDocument & { assets: string[] };
-          wallet.assets.push(walletAsset._id);
-          await wallet.save({ session });
-        }
+      if (walletAsset) {
+        walletAsset.shares +=
+          order.type === OrderType.BUY ? dto.shares : -dto.shares;
+        await walletAsset.save({ session });
+      } else {
+        const walletAssetDocs = await this.walletAssetSchema.create(
+          [
+            {
+              wallet: order.wallet,
+              asset: order.asset,
+              shares: dto.shares,
+            },
+          ],
+          { session },
+        );
+        const walletAsset = walletAssetDocs[0];
+        const wallet = (await this.walletSchema
+          .findById(order.wallet)
+          .session(session)) as WalletDocument & { assets: string[] };
+        wallet.assets.push(walletAsset._id);
+        await wallet.save({ session });
       }
 
       await session.commitTransaction();
